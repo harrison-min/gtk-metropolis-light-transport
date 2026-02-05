@@ -1,0 +1,6 @@
+# binaries
+bin/
+*.exe
+*.o
+*.obj
+*.out
