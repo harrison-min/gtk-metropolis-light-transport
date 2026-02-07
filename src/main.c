@@ -1,5 +1,7 @@
 #include "display.h"
+#include "vectorMath.h"
 #include <gtk/gtk.h>
+
 PixelMap * generateTestPixelMap (int width, int height) {
     PixelMap * newPixels = malloc (sizeof(PixelMap));
 
@@ -32,5 +34,4 @@ int main (int argc, char ** argv) {
     setPixelMap(display, generateTestPixelMap(width, height));
     runDisplay(display, 0, NULL);
     cleanDisplay(display);
-    
 }
