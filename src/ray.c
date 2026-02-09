@@ -25,7 +25,7 @@ double triangleIntersection (Triangle triangle, Ray ray) {
 
     double inverseDot = 1.0/dot;
 
-    Vector s = getVector(ray.origin, triangle.p1);
+    Vector s = getVector(triangle.p1, ray.origin);
     double u = dotProduct (s, rayCrossE2) * inverseDot; 
 
     if ((u < 0 && fabs(u) > DBL_EPSILON) || (u > 1 && fabs(u - 1) > DBL_EPSILON)) {
