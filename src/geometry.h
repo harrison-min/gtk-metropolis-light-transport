@@ -32,15 +32,15 @@ typedef struct {
 typedef struct {
     Triangle * triangles;
     int numTriangles;
-
+    int trianglesCapacity;
 
     Sphere * spheres;
     int numSpheres;
+    int spheresCapacity;
 
-    
     Material * materials;
     int numMaterials;
-
+    int materialsCapacity;
 
     Point boundingBoxMin;
     Point boundingBoxMax;
@@ -60,6 +60,8 @@ Material createMaterial (Vector color, Vector emission, MaterialType type, doubl
 void addTriangle (Scene * scene, Triangle triangle);
 void addSphere (Scene * scene, Sphere sphere);
 void addMaterial (Scene * scene, Material material);
+
+Scene * initScene(); 
 void freeScene (Scene * scene);
 void detectLight (Scene * scene);
 

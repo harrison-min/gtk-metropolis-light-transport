@@ -33,28 +33,68 @@ Material createMaterial (Vector color, Vector emission, MaterialType type, doubl
 }
 
 void addTriangle (Scene * scene, Triangle triangle) {
+    if (scene->numTriangles == scene->trianglesCapacity) {
+        scene->trianglesCapacity = scene->trianglesCapacity * 2;
+        Triangle * temp = realloc (scene->triangles, scene->trianglesCapacity * sizeof(*(scene->triangles)));
+        if (temp == NULL) {
+            //likely due to being out of memory
+            return;
+        }
+        scene->triangles = temp;
+    }
+    scene->triangles[scene->numTriangles] = triangle;
     scene->numTriangles ++;
-    scene->triangles = (Triangle *) realloc (scene->triangles, scene->numTriangles * sizeof (Triangle));
-    scene->triangles[scene->numTriangles - 1] = triangle;
 }
 
 void addSphere (Scene * scene, Sphere sphere) {
+    if (scene->numSpheres == scene->spheresCapacity) {
+        scene->spheresCapacity = scene->spheresCapacity * 2;
+        Sphere * temp = realloc (scene->spheres, scene->spheresCapacity * sizeof(*(scene->spheres)));
+        if (temp == NULL) {
+            //likely due to being out of memory
+            return;
+        }
+        scene->spheres = temp;
+    }
+    scene->spheres[scene->numSpheres] = sphere;
     scene->numSpheres ++;
-    scene->spheres = (Sphere *) realloc (scene->spheres, scene->numSpheres * sizeof (Sphere));
-    scene->spheres[scene->numSpheres - 1] = sphere;
 }
 
 void addMaterial (Scene * scene, Material material) {
+    if (scene->numMaterials == scene->materialsCapacity) {
+        scene->materialsCapacity = scene->materialsCapacity * 2;
+        Material * temp = realloc (scene->materials, scene->materialsCapacity * sizeof(*(scene->materials)));
+        if (temp == NULL) {
+            //likely due to being out of memory
+            return;
+        }
+        scene->materials = temp;
+    }
+    scene->materials[scene->numMaterials] = material;
     scene->numMaterials ++;
-    scene->materials = (Material *) realloc (scene->materials, scene->numMaterials * sizeof (Material));
-    scene->materials[scene->numMaterials - 1] = material;
+}
+
+Scene * initScene () {
+    Scene * newScene = calloc (1, sizeof(Scene));
+
+    int initialCapacity = 100;
+    newScene->spheresCapacity = initialCapacity;
+    newScene->trianglesCapacity = initialCapacity;
+    newScene->materialsCapacity = initialCapacity;
+
+    newScene->triangles = malloc (sizeof(Triangle) * newScene->trianglesCapacity);
+    newScene->spheres = malloc (sizeof(Sphere) * newScene->spheresCapacity);
+    newScene->materials = malloc (sizeof(Material) * newScene->materialsCapacity);
+
+    return newScene;
 }
 
 void freeScene (Scene * scene) {
+    if (!scene) return;
     free (scene->spheres);
     free (scene->triangles);
     free (scene->materials);
-    memset (scene, 0, sizeof (Scene));
+    free (scene);
 }
 
 void detectLight (Scene * scene) {

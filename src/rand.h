@@ -32,7 +32,7 @@ static inline double randomDouble (Seed * seed){
     return (double) (randomResult >> 11) * 0x1.0p-53; 
 }
 
-static inline uint64_t randomInt(Seed * seed){
+static inline uint64_t randomUInt64(Seed * seed){
     uint64_t *s = seed->state;
     uint64_t result = rotate (s[0] + s[3], 23) + s[0];
     advanceState(s);
