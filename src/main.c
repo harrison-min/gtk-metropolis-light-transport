@@ -9,12 +9,18 @@
 #define DEFAULT_OBJ "../test_scenes/cornell_box/CornellBox-Sphere.obj"
 #define DEFAULT_MTL "../test_scenes/cornell_box/CornellBox-Sphere.mtl"
 
+PixelMap * createPixelMap (int width, int height) {
+    PixelMap * map = malloc(sizeof(PixelMap));
+    map->width = width;
+    map->height = height;
+    map->size = width * height * sizeof(unsigned char) * 4;
+    map->data = malloc (map->size);
+    return map;
+}
+
 PixelMap * generateTestPixelMap (int width, int height) {
     Scene * scene = initScene();
     Camera * cam = createCamera(width, height);
-
-    //addSphere (scene, createSphere((Point){0, 0, -10}, 3.0, MATERIAL_DIFFUSE));
-    //addTriangle (scene, createTriangle((Point){0.0, 2.0, -5.0}, (Point){2.0, -2.0, -5.0}, (Point){-2.0, -2.0, -5.0}, MATERIAL_DIFFUSE));
 
     if (!loadScene (scene, DEFAULT_OBJ, DEFAULT_MTL)) {
         fprintf (stderr, "Failed to load scene: %s\n", DEFAULT_OBJ);
@@ -26,33 +32,8 @@ PixelMap * generateTestPixelMap (int width, int height) {
     fprintf (stderr, "Loaded: %d triangles, %d spheres, %d materials\n",
              scene->numTriangles, scene->numSpheres, scene->numMaterials);
 
-    /* bounding box!!!!! */
-    Point bbMin = scene->boundingBoxMin;
-    Point bbMax = scene->boundingBoxMax;
-    Vector extent = getVector (bbMin, bbMax);
-    Point center = movePoint (bbMin, scaleVector (extent, 0.5));
-
-    double halfWidth = extent.x * 0.5;
-    double halfHeight = extent.y * 0.5;
-    double maxHalf = fmax (halfWidth, halfHeight);
-
-    double fovDegrees = 39.0;
-    double tanHalfFov = tan (fovDegrees * M_PI / 360.0);
-    double distance = maxHalf / tanHalfFov;
-
-    cam->position = (Point){center.x, center.y, bbMax.z + distance};
-    cam->forward = normalizeVector (getVector (cam->position, center));
-    cam->right = normalizeVector (crossProduct (cam->forward, (Vector){0, 1, 0}));
-    cam->up = crossProduct (cam->right, cam->forward);
-    cam->halfTanFOV = tanHalfFov;
-    cam->FOV = fovDegrees;
-
-    PixelMap * newPixels = malloc (sizeof(PixelMap));
-
-    newPixels->width = width;
-    newPixels->height = height;
-    newPixels->size = width * height * sizeof(unsigned char) * 4;
-    newPixels->data = malloc (newPixels->size);
+    frameScene(scene, cam);
+    PixelMap * newPixels = createPixelMap(width, height);
 
     for (int x = 0; x < width; ++ x) {
         for (int y = 0; y < height; ++ y) {
@@ -60,9 +41,10 @@ PixelMap * generateTestPixelMap (int width, int height) {
             HitRecord dummyHit;
             int index = (x + y * width) * 4;
             if (getSceneHit(scene, temp, &dummyHit)) {
-                newPixels->data[index + 0] = 255; 
-                newPixels->data[index + 1] = 255; 
-                newPixels->data[index + 2] = 255; 
+                Material mat = scene->materials[dummyHit.materialId];
+                newPixels->data[index + 0] = (unsigned char)(mat.color.x * 255.0); 
+                newPixels->data[index + 1] = (unsigned char)(mat.color.y * 255.0); 
+                newPixels->data[index + 2] = (unsigned char)(mat.color.z * 255.0); 
                 newPixels->data[index + 3] = 255; 
             } else {
                 newPixels->data[index + 0] = 0; 

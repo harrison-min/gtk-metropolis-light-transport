@@ -17,6 +17,28 @@ Camera * createCamera (int imageWidth, int imageHeight) {
     return newCamera;
 }
 
+void frameScene (Scene * scene, Camera * cam) {
+    Point bbMin = scene->boundingBoxMin;
+    Point bbMax = scene->boundingBoxMax;
+    Vector extent = getVector (bbMin, bbMax);
+    Point center = movePoint (bbMin, scaleVector (extent, 0.5));
+
+    double halfWidth = extent.x * 0.5;
+    double halfHeight = extent.y * 0.5;
+    double maxHalf = fmax (halfWidth, halfHeight);
+
+    double fovDegrees = 39.0;
+    double tanHalfFov = tan (fovDegrees * M_PI / 360.0);
+    double distance = maxHalf / tanHalfFov;
+
+    cam->position = (Point){center.x, center.y, bbMax.z + distance};
+    cam->forward = normalizeVector (getVector (cam->position, center));
+    cam->right = normalizeVector (crossProduct (cam->forward, (Vector){0, 1, 0}));
+    cam->up = crossProduct (cam->right, cam->forward);
+    cam->halfTanFOV = tanHalfFov;
+    cam->FOV = fovDegrees;
+}
+
 void freeCamera(Camera * cam) {
     free (cam);
 }

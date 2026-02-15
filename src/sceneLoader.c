@@ -183,10 +183,10 @@ bool loadScene (Scene * scene, const char * objPath, const char * mtlPath) {
     int numParsed = 0;
 
     /* load MTL from path */
-    int mtlLoaded = 0;
+    bool mtlLoaded = false;
     if (mtlPath && mtlPath[0]) {
         numParsed = loadAndConvertMaterials (scene, mtlPath, parsed, &numParsed);
-        mtlLoaded = 1;
+        mtlLoaded = true;
     }
 
     /* current parsing state */
@@ -210,7 +210,7 @@ bool loadScene (Scene * scene, const char * objPath, const char * mtlPath) {
             char autoPath[768];
             snprintf (autoPath, sizeof (autoPath), "%s%s", directory, mtlName);
             numParsed = loadAndConvertMaterials (scene, autoPath, parsed, &numParsed);
-            mtlLoaded = 1;
+            mtlLoaded = true;
         }
 
         /* vertex */
@@ -219,7 +219,7 @@ bool loadScene (Scene * scene, const char * objPath, const char * mtlPath) {
             if (sscanf (line + 2, "%lf %lf %lf", &vertex.x, &vertex.y, &vertex.z) == 3) {
                 if (numVertices >= verticesCapacity) {
                     verticesCapacity = verticesCapacity ? verticesCapacity * 2 : 4096;
-                    vertices = (Point *) realloc (vertices, verticesCapacity * sizeof (Point));
+                    vertices = realloc (vertices, verticesCapacity * sizeof (Point));
                 }
                 vertices[numVertices ++] = vertex;
 
@@ -272,7 +272,7 @@ bool loadScene (Scene * scene, const char * objPath, const char * mtlPath) {
                 for (int i = 0; i < count; ++ i) {
                     if (numSphereVertices >= sphereVerticesCapacity) {
                         sphereVerticesCapacity = sphereVerticesCapacity ? sphereVerticesCapacity * 2 : 8192;
-                        sphereVertices = (int *) realloc (sphereVertices, sphereVerticesCapacity * sizeof (int));
+                        sphereVertices = realloc (sphereVertices, sphereVerticesCapacity * sizeof (int));
                     }
                     sphereVertices[numSphereVertices ++] = vertexIndices[i];
                 }

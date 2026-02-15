@@ -16,6 +16,7 @@ typedef struct {
 } Camera;
 
 Camera * createCamera(int imageWidth, int imageHeight);
+void frameScene (Scene * scene, Camera * cam);
 void freeCamera(Camera * cam);
 Ray getCameraRay (Camera * cam, double px, double py);
 
