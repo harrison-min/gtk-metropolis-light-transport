@@ -98,7 +98,7 @@ void freeScene (Scene * scene) {
 }
 
 void detectLight (Scene * scene) {
-    scene->hasLight = 0;
+    scene->hasLight = false;
 
     int lightMaterial = -1;
     for (int i = 0; i < scene->numMaterials; ++ i) {
@@ -148,7 +148,7 @@ void detectLight (Scene * scene) {
             scene->lightEdge2 = getVector (t0->p1, uniqueVertex);
             scene->lightNormal = t0->normal;
             scene->lightArea = vectorLength (crossProduct (scene->lightEdge1, scene->lightEdge2));
-            scene->hasLight = 1;
+            scene->hasLight = true;
         }
     } else if (numLightTriangles == 1) {
         Triangle * t = &scene->triangles[lightTriangles[0]];
@@ -157,6 +157,6 @@ void detectLight (Scene * scene) {
         scene->lightEdge2 = getVector (t->p1, t->p3);
         scene->lightNormal = t->normal;
         scene->lightArea = 0.5 * vectorLength (crossProduct (scene->lightEdge1, scene->lightEdge2));
-        scene->hasLight = 1;
+        scene->hasLight = true;
     }
 }

@@ -1,3 +1,4 @@
+#include "pathTracer.h"
 #include "display.h"
 #include "geometry.h"
 #include "camera.h"
@@ -37,21 +38,29 @@ PixelMap * generateTestPixelMap (int width, int height) {
 
     for (int x = 0; x < width; ++ x) {
         for (int y = 0; y < height; ++ y) {
-            Ray temp = getCameraRay(cam, x, y);
-            HitRecord dummyHit;
-            int index = (x + y * width) * 4;
-            if (getSceneHit(scene, temp, &dummyHit)) {
-                Material mat = scene->materials[dummyHit.materialId];
-                newPixels->data[index + 0] = (unsigned char)(mat.color.x * 255.0); 
-                newPixels->data[index + 1] = (unsigned char)(mat.color.y * 255.0); 
-                newPixels->data[index + 2] = (unsigned char)(mat.color.z * 255.0); 
-                newPixels->data[index + 3] = 255; 
-            } else {
-                newPixels->data[index + 0] = 0; 
-                newPixels->data[index + 1] = 0; 
-                newPixels->data[index + 2] = 0; 
-                newPixels->data[index + 3] = 255; 
+            HitRecord path [MAX_BOUNCES];
+           
+            int totalSamples = 5;
+
+            Vector color = {0, 0, 0};
+
+            for (int samples = 0; samples < totalSamples; ++ samples) {
+                double jitterX = (double)x + ((double)rand() / RAND_MAX - 0.5);
+                double jitterY = (double)y + ((double)rand() / RAND_MAX - 0.5);
+                Ray cameraRay = getCameraRay(cam, jitterX, jitterY);
+                int totalHits = tracePath(cameraRay, path, 0, scene);
+                Vector tempColor = calculatePathColor(path, totalHits, scene);
+                color = addVector(color, tempColor);
             }
+
+            color = scaleVector (color, 1.0/totalSamples);
+
+            int index = (x + y * width) * 4;
+            newPixels->data[index + 0] = (unsigned char)(fmin(1.0, color.x) * 255.0); 
+            newPixels->data[index + 1] = (unsigned char)(fmin(1.0, color.y) * 255.0); 
+            newPixels->data[index + 2] = (unsigned char)(fmin(1.0, color.z) * 255.0); 
+            newPixels->data[index + 3] = 255; 
+            
         }
     }
 

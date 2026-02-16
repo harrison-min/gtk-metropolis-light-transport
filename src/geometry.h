@@ -2,6 +2,7 @@
 #define GEOMETRY_H
 
 #include "vectorMath.h"
+#include <stdbool.h>
 
 typedef enum {
     MATERIAL_DIFFUSE,
@@ -50,7 +51,7 @@ typedef struct {
     Vector lightNormal;
     double lightArea;
     int lightMaterialId;
-    int hasLight;
+    bool hasLight;
 } Scene;
 
 Triangle createTriangle (Point p1, Point p2, Point p3, int materialId);
