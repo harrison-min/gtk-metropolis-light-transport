@@ -1,39 +1,53 @@
 #include "pathTracer.h"
 #include <stdlib.h>
 
+static Ray mirrorReflection (Vector incoming, Vector normal, Point intersection) {
+    Ray reflectedRay;
+    reflectedRay.vector = subtractVector(incoming, scaleVector(normal, 2 * dotProduct(normal, incoming)));
+    reflectedRay.vector = normalizeVector(reflectedRay.vector);
+    reflectedRay.origin = movePoint(intersection, scaleVector(normal, RAY_EPSILON));
+    return reflectedRay;
+}
+
+static Ray diffuseReflection (Vector normal, Point intersection) {
+    Vector randVec;
+    randVec.x = ((double)rand() / RAND_MAX) * 2.0 - 1.0;
+    randVec.y = ((double)rand() / RAND_MAX) * 2.0 - 1.0;
+    randVec.z = ((double)rand() / RAND_MAX) * 2.0 - 1.0;
+
+    Ray reflectedRay;
+    reflectedRay.vector = normalizeVector(addVector(normal, randVec));
+    reflectedRay.origin = movePoint (intersection, scaleVector(normal, RAY_EPSILON));
+
+    return reflectedRay;
+}
+
 int tracePath (Ray ray, HitRecord * path, int totalBounces, Scene * scene) {
     if (totalBounces >= MAX_BOUNCES) return totalBounces;
     
-    HitRecord temp;
-    if (!getSceneHit(scene, ray, &temp)) {
+    HitRecord currentHit;
+    if (!getSceneHit(scene, ray, &currentHit)) {
         return totalBounces;
     } else {
-        path[totalBounces]  = temp;
+        path[totalBounces]  = currentHit;
     }
-    Material mat = scene->materials[temp.materialId];
+
+    Material mat = scene->materials[currentHit.materialId];
 
     Ray reflectedRay;
-    reflectedRay.origin = movePoint(temp.intersection, scaleVector(temp.normal, RAY_EPSILON));
         
     if (mat.type == MATERIAL_MIRROR) {
-        reflectedRay.vector = subtractVector(ray.vector, scaleVector(temp.normal, 2 * dotProduct(temp.normal, ray.vector)));
-        reflectedRay.vector = normalizeVector(reflectedRay.vector);
+        reflectedRay = mirrorReflection(ray.vector, currentHit.normal, currentHit.intersection);
     } else if (mat.type == MATERIAL_DIFFUSE){
-        Vector randVec;
-        randVec.x = ((double)rand() / RAND_MAX) * 2.0 - 1.0;
-        randVec.y = ((double)rand() / RAND_MAX) * 2.0 - 1.0;
-        randVec.z = ((double)rand() / RAND_MAX) * 2.0 - 1.0;
-
-        reflectedRay.vector = normalizeVector(addVector(temp.normal, randVec));
+        reflectedRay = diffuseReflection(currentHit.normal, currentHit.intersection);
     } else if (mat.type == MATERIAL_GLASS) {
         double indexOfRefraction = mat.indexOfRefraction;
-        double cosTheta = dotProduct (ray.vector, temp.normal);
-        Vector normal = temp.normal;
+        double cosTheta = dotProduct (ray.vector, currentHit.normal);
+        Vector glassNormal = currentHit.normal;
         double refractionRatio = 1.0/indexOfRefraction; //Assuming index of air is 1.0
 
-
         if (cosTheta > 0) {
-            normal = scaleVector(temp.normal, -1);
+            glassNormal = scaleVector(currentHit.normal, -1);
             refractionRatio = indexOfRefraction; 
         } else {
             cosTheta = -cosTheta;  
@@ -43,15 +57,26 @@ int tracePath (Ray ray, HitRecord * path, int totalBounces, Scene * scene) {
 
         if (internalReflectionCheck < 0) {
             //it behaves like a mirror due to total Internal Reflection
-            reflectedRay.vector = subtractVector(ray.vector, scaleVector(normal, 2 * dotProduct(normal, ray.vector)));
-            reflectedRay.vector = normalizeVector(reflectedRay.vector);
-            reflectedRay.origin = movePoint(temp.intersection, scaleVector(normal, RAY_EPSILON));
+            reflectedRay = mirrorReflection(ray.vector, glassNormal, currentHit.intersection);
         } else {
-            Vector term1 = scaleVector (ray.vector, refractionRatio);
-            Vector term2 = scaleVector (normal, refractionRatio * cosTheta - sqrt (internalReflectionCheck));
+            //schlick approximation
+            double reflectionCoefficient = (1.0 - indexOfRefraction) / (1.0 + indexOfRefraction);
+            reflectionCoefficient = reflectionCoefficient * reflectionCoefficient;
 
-            reflectedRay.vector = normalizeVector (addVector(term1, term2));
-            reflectedRay.origin = movePoint(temp.intersection, scaleVector(normal, -1 * RAY_EPSILON));
+            double fresnelProbability = reflectionCoefficient + (1 - reflectionCoefficient) * pow((1 - cosTheta), 5);
+
+
+            if ((double)rand()/RAND_MAX < fresnelProbability) {
+                //reflection
+                reflectedRay = mirrorReflection(ray.vector, glassNormal, currentHit.intersection);
+            } else {
+                //refraction
+                Vector term1 = scaleVector(ray.vector, refractionRatio);
+                Vector term2 = scaleVector(glassNormal, refractionRatio * cosTheta - sqrt(internalReflectionCheck));
+
+                reflectedRay.vector = normalizeVector(addVector(term1, term2));
+                reflectedRay.origin = movePoint(currentHit.intersection, scaleVector(glassNormal, -1 * RAY_EPSILON));
+            }
         }
 
     }
@@ -72,22 +97,28 @@ Vector calculatePathColor (HitRecord * path, int numHits, Scene * scene) {
         }
 
         if (scene->hasLight) {
-            Vector lightDirection = getVector (currentHit->intersection, scene->lightVertex);
-            double distanceToLight = vectorLength(lightDirection);
-            lightDirection = normalizeVector(lightDirection);
+            Vector directionToLight = getVector (currentHit->intersection, scene->lightVertex);
+            double distanceToLight = vectorLength(directionToLight);
+            directionToLight = normalizeVector(directionToLight);
+            Vector directionFromLight = scaleVector(directionToLight, -1.0);
 
-            Point origin = movePoint(currentHit->intersection, scaleVector(currentHit->normal, RAY_EPSILON));
-            Ray directLightRay = {origin, lightDirection};
+            double cosThetaLight = dotProduct(scene->lightNormal, directionFromLight);
+            double cosThetaSurface = dotProduct (currentHit->normal, directionToLight);
 
-            HitRecord directLightHit;
-            if (!getSceneHit(scene, directLightRay, &directLightHit) || directLightHit.distance > (distanceToLight - RAY_EPSILON)) {
-                double cosTheta = dotProduct(currentHit->normal, lightDirection);
-                if (cosTheta > 0) {
-                    double falloff = 1.0/(pow(distanceToLight, 2.0) + 1);
+            if(cosThetaLight > 0 && cosThetaSurface >0) {
+                Point origin = movePoint(currentHit->intersection, scaleVector(currentHit->normal, RAY_EPSILON));
+                Ray directLightRay = {origin, directionToLight};
 
-                    Vector directLightContribution = scaleVector(scene->materials[scene->lightMaterialId].emission, cosTheta * falloff);
-                    Vector reflectedLight = multiplyVector(directLightContribution, mat.color);
-                    color = addVector(color, multiplyVector(throughput, reflectedLight));
+                HitRecord directLightHit;
+                if (!getSceneHit(scene, directLightRay, &directLightHit) || directLightHit.distance > (distanceToLight - RAY_EPSILON)) {
+                    if (cosThetaSurface > 0) {
+                        double falloff = 1.0/(pow(distanceToLight, 2.0) + 1);
+                        double intensity = cosThetaSurface * cosThetaLight * falloff;
+
+                        Vector directLightContribution = scaleVector(scene->materials[scene->lightMaterialId].emission, intensity);
+                        Vector reflectedLight = multiplyVector(directLightContribution, mat.color);
+                        color = addVector(color, multiplyVector(throughput, reflectedLight));
+                    }
                 }
             }
         }

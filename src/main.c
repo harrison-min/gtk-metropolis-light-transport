@@ -56,9 +56,10 @@ PixelMap * generateTestPixelMap (int width, int height) {
             color = scaleVector (color, 1.0/totalSamples);
 
             int index = (x + y * width) * 4;
-            newPixels->data[index + 0] = (unsigned char)(fmin(1.0, color.x) * 255.0); 
-            newPixels->data[index + 1] = (unsigned char)(fmin(1.0, color.y) * 255.0); 
-            newPixels->data[index + 2] = (unsigned char)(fmin(1.0, color.z) * 255.0); 
+            double gamma = 1.0/2.2;
+            newPixels->data[index + 0] = (unsigned char)(fmin(1.0, pow(color.x, gamma)) * 255.0); 
+            newPixels->data[index + 1] = (unsigned char)(fmin(1.0, pow(color.y, gamma)) * 255.0); 
+            newPixels->data[index + 2] = (unsigned char)(fmin(1.0, pow(color.z, gamma)) * 255.0); 
             newPixels->data[index + 3] = 255; 
             
         }
