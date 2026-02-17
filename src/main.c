@@ -40,7 +40,7 @@ PixelMap * generateTestPixelMap (int width, int height) {
         for (int y = 0; y < height; ++ y) {
             HitRecord path [MAX_BOUNCES];
            
-            int totalSamples = 5;
+            int totalSamples = 10;
 
             Vector color = {0, 0, 0};
 

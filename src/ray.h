@@ -4,7 +4,7 @@
 #include "geometry.h"
 #include <stdbool.h>
 
-#define RAY_EPSILON 1e-4
+#define RAY_EPSILON 1e-3
 
 typedef struct {
     Point origin;
