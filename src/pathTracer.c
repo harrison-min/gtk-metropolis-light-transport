@@ -9,11 +9,11 @@ static Ray mirrorReflection (Vector incoming, Vector normal, Point intersection)
     return reflectedRay;
 }
 
-static Ray diffuseReflection (Vector normal, Point intersection) {
+static Ray diffuseReflection (Vector normal, Point intersection, Seed * seed) {
     Vector randVec;
-    randVec.x = ((double)rand() / RAND_MAX) * 2.0 - 1.0;
-    randVec.y = ((double)rand() / RAND_MAX) * 2.0 - 1.0;
-    randVec.z = ((double)rand() / RAND_MAX) * 2.0 - 1.0;
+    randVec.x = (randomDouble(seed)) * 2.0 - 1.0;
+    randVec.y = (randomDouble(seed)) * 2.0 - 1.0;
+    randVec.z = (randomDouble(seed)) * 2.0 - 1.0;
 
     Ray reflectedRay;
     reflectedRay.vector = normalizeVector(addVector(normal, randVec));
@@ -22,7 +22,7 @@ static Ray diffuseReflection (Vector normal, Point intersection) {
     return reflectedRay;
 }
 
-int tracePath (Ray ray, HitRecord * path, int totalBounces, Scene * scene) {
+int tracePath (Ray ray, HitRecord * path, int totalBounces, Scene * scene, Seed * seed) {
     if (totalBounces >= MAX_BOUNCES) return totalBounces;
     
     HitRecord currentHit;
@@ -35,11 +35,11 @@ int tracePath (Ray ray, HitRecord * path, int totalBounces, Scene * scene) {
     Material mat = scene->materials[currentHit.materialId];
 
     Ray reflectedRay;
-        
+    
     if (mat.type == MATERIAL_MIRROR) {
         reflectedRay = mirrorReflection(ray.vector, currentHit.normal, currentHit.intersection);
     } else if (mat.type == MATERIAL_DIFFUSE){
-        reflectedRay = diffuseReflection(currentHit.normal, currentHit.intersection);
+        reflectedRay = diffuseReflection(currentHit.normal, currentHit.intersection, seed);
     } else if (mat.type == MATERIAL_GLASS) {
         double indexOfRefraction = mat.indexOfRefraction;
         double cosTheta = dotProduct (ray.vector, currentHit.normal);
@@ -66,7 +66,7 @@ int tracePath (Ray ray, HitRecord * path, int totalBounces, Scene * scene) {
             double fresnelProbability = reflectionCoefficient + (1 - reflectionCoefficient) * pow((1 - cosTheta), 5);
 
 
-            if ((double)rand()/RAND_MAX < fresnelProbability) {
+            if (randomDouble(seed) < fresnelProbability) {
                 //reflection
                 reflectedRay = mirrorReflection(ray.vector, glassNormal, currentHit.intersection);
             } else {
@@ -81,10 +81,10 @@ int tracePath (Ray ray, HitRecord * path, int totalBounces, Scene * scene) {
 
     }
 
-    return tracePath (reflectedRay, path, totalBounces + 1, scene);
+    return tracePath (reflectedRay, path, totalBounces + 1, scene, seed);
 }
 
-Vector calculatePathColor (HitRecord * path, int numHits, Scene * scene) {
+Vector calculatePathColor (HitRecord * path, int numHits, Scene * scene, Seed * seed) {
     Vector color = {0, 0, 0};
     Vector throughput = {1, 1, 1};
 
@@ -112,7 +112,7 @@ Vector calculatePathColor (HitRecord * path, int numHits, Scene * scene) {
                 HitRecord directLightHit;
                 if (!getSceneHit(scene, directLightRay, &directLightHit) || directLightHit.distance > (distanceToLight - RAY_EPSILON)) {
                     if (cosThetaSurface > 0) {
-                        double falloff = 1.0/(pow(distanceToLight, 2.0) + 1);
+                        double falloff = 1.0/(distanceToLight * distanceToLight + 1);
                         double intensity = cosThetaSurface * cosThetaLight * falloff;
 
                         Vector directLightContribution = scaleVector(scene->materials[scene->lightMaterialId].emission, intensity);

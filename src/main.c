@@ -9,6 +9,7 @@
 
 #define DEFAULT_OBJ "../test_scenes/cornell_box/CornellBox-Sphere.obj"
 #define DEFAULT_MTL "../test_scenes/cornell_box/CornellBox-Sphere.mtl"
+#define TOTAL_SAMPLES 10
 
 PixelMap * createPixelMap (int width, int height) {
     PixelMap * map = malloc(sizeof(PixelMap));
@@ -35,25 +36,25 @@ PixelMap * generateTestPixelMap (int width, int height) {
 
     frameScene(scene, cam);
     PixelMap * newPixels = createPixelMap(width, height);
+    
+    Seed * seed = generateSeed();
 
     for (int x = 0; x < width; ++ x) {
         for (int y = 0; y < height; ++ y) {
             HitRecord path [MAX_BOUNCES];
-           
-            int totalSamples = 10;
 
             Vector color = {0, 0, 0};
 
-            for (int samples = 0; samples < totalSamples; ++ samples) {
-                double jitterX = (double)x + ((double)rand() / RAND_MAX - 0.5);
-                double jitterY = (double)y + ((double)rand() / RAND_MAX - 0.5);
+            for (int samples = 0; samples < TOTAL_SAMPLES; ++ samples) {
+                double jitterX = (double)x + (randomDouble(seed) - 0.5);
+                double jitterY = (double)y + (randomDouble(seed) - 0.5);
                 Ray cameraRay = getCameraRay(cam, jitterX, jitterY);
-                int totalHits = tracePath(cameraRay, path, 0, scene);
-                Vector tempColor = calculatePathColor(path, totalHits, scene);
+                int totalHits = tracePath(cameraRay, path, 0, scene, seed);
+                Vector tempColor = calculatePathColor(path, totalHits, scene, seed);
                 color = addVector(color, tempColor);
             }
 
-            color = scaleVector (color, 1.0/totalSamples);
+            color = scaleVector (color, 1.0/TOTAL_SAMPLES);
 
             int index = (x + y * width) * 4;
             double gamma = 1.0/2.2;
@@ -67,6 +68,7 @@ PixelMap * generateTestPixelMap (int width, int height) {
 
     freeScene(scene);
     freeCamera(cam);
+    free(seed);
 
     return newPixels;
 }
@@ -96,6 +98,10 @@ int main (int argc, char ** argv) {
     double timeSpent = (double)(end.QuadPart - start.QuadPart)/frequency.QuadPart;
 
     fprintf(stderr,"Rendered %d x %d pixels in %f seconds.\n", width, height, timeSpent);
+    
+    double raysPerSecond = width * height * TOTAL_SAMPLES / timeSpent;
+    fprintf(stderr, "Rendered %f rays per second.\n", raysPerSecond);
+
 
     GtkDisplay * display = createDisplay(width, height);
     setPixelMap(display, map);
