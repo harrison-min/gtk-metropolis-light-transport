@@ -30,6 +30,31 @@ typedef struct {
     int materialId;
 } Sphere;
 
+typedef enum {
+    TRIANGLE,
+    SPHERE
+} GeometryType;
+
+typedef struct {
+    Point min;
+    Point max;
+} BoundingBox;
+
+typedef struct {
+    GeometryType type;
+    BoundingBox bounds;
+    Point centroid;
+    int index;
+} BVHObject;
+
+typedef struct BVHNode {
+    BoundingBox bounds;
+    struct BVHNode * left;
+    struct BVHNode * right;
+    GeometryType type;
+    int index;
+} BVHNode;
+
 typedef struct {
     Triangle * triangles;
     int numTriangles;
@@ -43,8 +68,9 @@ typedef struct {
     int numMaterials;
     int materialsCapacity;
 
-    Point boundingBoxMin;
-    Point boundingBoxMax;
+    BVHNode * root;
+
+    BoundingBox boundingBox;
     Point lightVertex;
     Vector lightEdge1;
     Vector lightEdge2;
@@ -65,5 +91,7 @@ void addMaterial (Scene * scene, Material material);
 Scene * initScene(); 
 void freeScene (Scene * scene);
 void detectLight (Scene * scene);
+
+void createBVH (Scene * scene);
 
 #endif

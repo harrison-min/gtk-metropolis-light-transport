@@ -3,8 +3,7 @@
 
 #include "geometry.h"
 #include <stdbool.h>
-
-#define RAY_EPSILON 1e-3
+#include "constants.h"
 
 typedef struct {
     Point origin;

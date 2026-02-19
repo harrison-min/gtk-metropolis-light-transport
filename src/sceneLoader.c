@@ -166,8 +166,8 @@ static void flushSphereGroup (Scene * scene, const Point * vertices,
 /* OBJ loader */
 
 bool loadScene (Scene * scene, const char * objPath, const char * mtlPath) {
-    scene->boundingBoxMin = (Point){1e20, 1e20, 1e20};
-    scene->boundingBoxMax = (Point){-1e20, -1e20, -1e20};
+    scene->boundingBox.min = (Point){1e20, 1e20, 1e20};
+    scene->boundingBox.max = (Point){-1e20, -1e20, -1e20};
 
     char directory[512];
     getDirectoryFromPath (objPath, directory, sizeof (directory));
@@ -223,12 +223,12 @@ bool loadScene (Scene * scene, const char * objPath, const char * mtlPath) {
                 }
                 vertices[numVertices ++] = vertex;
 
-                if (vertex.x < scene->boundingBoxMin.x) scene->boundingBoxMin.x = vertex.x;
-                if (vertex.y < scene->boundingBoxMin.y) scene->boundingBoxMin.y = vertex.y;
-                if (vertex.z < scene->boundingBoxMin.z) scene->boundingBoxMin.z = vertex.z;
-                if (vertex.x > scene->boundingBoxMax.x) scene->boundingBoxMax.x = vertex.x;
-                if (vertex.y > scene->boundingBoxMax.y) scene->boundingBoxMax.y = vertex.y;
-                if (vertex.z > scene->boundingBoxMax.z) scene->boundingBoxMax.z = vertex.z;
+                if (vertex.x < scene->boundingBox.min.x) scene->boundingBox.min.x = vertex.x;
+                if (vertex.y < scene->boundingBox.min.y) scene->boundingBox.min.y = vertex.y;
+                if (vertex.z < scene->boundingBox.min.z) scene->boundingBox.min.z = vertex.z;
+                if (vertex.x > scene->boundingBox.max.x) scene->boundingBox.max.x = vertex.x;
+                if (vertex.y > scene->boundingBox.max.y) scene->boundingBox.max.y = vertex.y;
+                if (vertex.z > scene->boundingBox.max.z) scene->boundingBox.max.z = vertex.z;
             }
         }
 
@@ -303,5 +303,6 @@ bool loadScene (Scene * scene, const char * objPath, const char * mtlPath) {
     free (sphereVertices);
 
     detectLight (scene);
+
     return (scene->numTriangles > 0 || scene->numSpheres > 0);
 }

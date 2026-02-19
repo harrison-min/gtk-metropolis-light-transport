@@ -18,8 +18,8 @@ Camera * createCamera (int imageWidth, int imageHeight) {
 }
 
 void frameScene (Scene * scene, Camera * cam) {
-    Point bbMin = scene->boundingBoxMin;
-    Point bbMax = scene->boundingBoxMax;
+    Point bbMin = scene->boundingBox.min;
+    Point bbMax = scene->boundingBox.max;
     Vector extent = getVector (bbMin, bbMax);
     Point center = movePoint (bbMin, scaleVector (extent, 0.5));
 

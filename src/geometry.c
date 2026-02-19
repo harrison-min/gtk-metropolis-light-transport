@@ -37,7 +37,6 @@ void addTriangle (Scene * scene, Triangle triangle) {
         scene->trianglesCapacity = scene->trianglesCapacity * 2;
         Triangle * temp = realloc (scene->triangles, scene->trianglesCapacity * sizeof(*(scene->triangles)));
         if (temp == NULL) {
-            //likely due to being out of memory
             return;
         }
         scene->triangles = temp;
@@ -164,4 +163,68 @@ void detectLight (Scene * scene) {
         scene->lightArea = 0.5 * vectorLength (crossProduct (scene->lightEdge1, scene->lightEdge2));
         scene->hasLight = true;
     }
+}
+
+static BVHObject createBVHObject (void * data, GeometryType type, int index) {
+    BVHObject newObject;
+    newObject.type = type;        
+    newObject.index = index;
+
+    if (type == TRIANGLE) {
+        Triangle triangle = *((Triangle *) data);
+
+        double temp = triangle.p1.x < triangle.p2.x ? triangle.p1.x : triangle.p2.x;
+        newObject.bounds.min.x = temp < triangle.p3.x ? temp : triangle.p3.x;
+        temp = triangle.p1.y < triangle.p2.y ? triangle.p1.y : triangle.p2.y;
+        newObject.bounds.min.y = temp < triangle.p3.y ? temp : triangle.p3.y;
+        temp = triangle.p1.z < triangle.p2.z ? triangle.p1.z : triangle.p2.z;
+        newObject.bounds.min.z = temp < triangle.p3.z ? temp : triangle.p3.z;
+
+        temp = triangle.p1.x > triangle.p2.x ? triangle.p1.x : triangle.p2.x;
+        newObject.bounds.max.x = temp > triangle.p3.x ? temp : triangle.p3.x;
+        temp = triangle.p1.y > triangle.p2.y ? triangle.p1.y : triangle.p2.y;
+        newObject.bounds.max.y = temp > triangle.p3.y ? temp : triangle.p3.y;
+        temp = triangle.p1.z > triangle.p2.z ? triangle.p1.z : triangle.p2.z;
+        newObject.bounds.max.z = temp > triangle.p3.z ? temp : triangle.p3.z;
+
+        double rayEpsilon = 1e-3; //using this instead of including ray.h to avoid circular dependencies
+        newObject.bounds.min.x -= rayEpsilon; newObject.bounds.min.y -= rayEpsilon; newObject.bounds.min.z -= rayEpsilon;
+        newObject.bounds.max.x += rayEpsilon; newObject.bounds.max.y += rayEpsilon; newObject.bounds.max.z += rayEpsilon;
+
+        newObject.centroid.x = (triangle.p1.x + triangle.p2.x + triangle.p3.x)/ 3.0;
+        newObject.centroid.y = (triangle.p1.y + triangle.p2.y + triangle.p3.y)/ 3.0;
+        newObject.centroid.z = (triangle.p1.z + triangle.p2.z + triangle.p3.z)/ 3.0;
+
+    } else if (type == SPHERE) {
+        Sphere sphere = *((Sphere * ) data);
+
+        newObject.bounds.min.x = sphere.center.x - sphere.radius;
+        newObject.bounds.min.y = sphere.center.y - sphere.radius;
+        newObject.bounds.min.z = sphere.center.z - sphere.radius;
+        newObject.bounds.max.x = sphere.center.x + sphere.radius;
+        newObject.bounds.max.y = sphere.center.y + sphere.radius;
+        newObject.bounds.max.z = sphere.center.z + sphere.radius;
+
+        newObject.centroid = sphere.center;
+    }
+
+    return newObject;
+}
+
+void createBVH (Scene * scene) {
+    int totalNumberOfObjects = scene->numTriangles + scene->numSpheres;
+    BVHObject * bvhArray = malloc(totalNumberOfObjects * sizeof(BVHObject));
+
+    int index = 0;
+    for (int i = 0; i < scene->numTriangles; ++ i) {
+        bvhArray [index++] = createBVHObject (&(scene->triangles[i]), TRIANGLE, i);
+    }
+
+    for (int i = 0; i < scene->numSpheres; ++ i) {
+        bvhArray [index++] = createBVHObject (&(scene->spheres[i]), SPHERE, i);
+    }
+
+    
+
+    free (bvhArray);
 }

@@ -3,12 +3,8 @@
 
 #include <math.h>
 
-#ifndef M_PI
-#define M_PI 3.14159265358979323846
-#endif
+#include "constants.h"
 
-#define VECTOR_ZERO ((Vector){0.0, 0.0, 0.0})
-#define VECTOR_ONE  ((Vector){1.0, 1.0, 1.0})
 
 typedef struct {
     double x, y, z;

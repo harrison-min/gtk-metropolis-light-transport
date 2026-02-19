@@ -6,10 +6,7 @@
 #include "sceneLoader.h"
 #include <windows.h>
 #include <stdio.h>
-
-#define DEFAULT_OBJ "../test_scenes/cornell_box/CornellBox-Sphere.obj"
-#define DEFAULT_MTL "../test_scenes/cornell_box/CornellBox-Sphere.mtl"
-#define TOTAL_SAMPLES 10
+#include "constants.h"
 
 PixelMap * createPixelMap (int width, int height) {
     PixelMap * map = malloc(sizeof(PixelMap));
