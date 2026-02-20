@@ -1,4 +1,5 @@
 #include "sceneLoader.h"
+#include "bvh.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -303,6 +304,7 @@ bool loadScene (Scene * scene, const char * objPath, const char * mtlPath) {
     free (sphereVertices);
 
     detectLight (scene);
+    createBVH (scene);
 
     return (scene->numTriangles > 0 || scene->numSpheres > 0);
 }

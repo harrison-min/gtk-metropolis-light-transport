@@ -1,5 +1,7 @@
 #include "ray.h"
+#include "bvh.h"
 #include <float.h>
+#include <stdio.h>
 
 bool getTriangleHit (Triangle triangle, Ray ray, double minDist, double maxDist, HitRecord * record) {
     //Moller Trumbore intersection algorithm
@@ -39,7 +41,7 @@ bool getTriangleHit (Triangle triangle, Ray ray, double minDist, double maxDist,
     return true;
 }
 
-bool getSphereHit (Sphere sphere, Ray ray, double minDist, double maxDist, HitRecord * record) {
+bool getSphereHit (Sphere sphere, Ray ray, double minDist, double maxDist, HitRecord * record){
     Vector originToCenter = getVector (sphere.center, ray.origin);
     double a = dotProduct (ray.vector, ray.vector);
     double halfB = dotProduct (originToCenter, ray.vector);
@@ -65,6 +67,64 @@ bool getSphereHit (Sphere sphere, Ray ray, double minDist, double maxDist, HitRe
     record->normal = scaleVector (getVector (sphere.center, record->intersection), 1.0 / sphere.radius);
     record->materialId = sphere.materialId;
     return true;
+}
+
+static bool boundingBoxHit (BoundingBox * box, Ray ray) {
+    //slab method
+    double close = -INFINITY, far = INFINITY;
+    double tempTLow, tempTHigh;
+
+    double invX = 1.0/ ray.vector.x;
+    double invY = 1.0/ ray.vector.y;
+    double invZ = 1.0/ ray.vector.z;
+
+    tempTLow = (box->min.x - ray.origin.x) * invX;
+    tempTHigh = (box->max.x - ray.origin.x) * invX;
+    close = fmax(close, fmin(tempTLow, tempTHigh));
+    far = fmin(far, fmax(tempTLow, tempTHigh));
+    
+    tempTLow = (box->min.y - ray.origin.y) * invY;
+    tempTHigh = (box->max.y - ray.origin.y) * invY;
+    close = fmax(close, fmin(tempTLow, tempTHigh));
+    far = fmin(far, fmax(tempTLow, tempTHigh));
+
+    tempTLow = (box->min.z - ray.origin.z) * invZ;
+    tempTHigh = (box->max.z - ray.origin.z) * invZ;
+    close = fmax(close, fmin(tempTLow, tempTHigh));
+    far = fmin(far, fmax(tempTLow, tempTHigh));
+
+    if (close > far || far < RAY_EPSILON) return false;
+    return true;
+}
+
+static bool getBVHHit (Scene * scene, BVHNode * currentNode, Ray ray, double minDist, double maxDist, HitRecord * record) {
+    if (currentNode == NULL) return false;
+    if (!boundingBoxHit (&(currentNode->bounds), ray)) return false;
+
+    if (currentNode->left || currentNode->right) {
+        bool leftResult = getBVHHit(scene, currentNode->left, ray, minDist, maxDist, record);
+        
+        if (leftResult) maxDist = record->distance;
+
+        bool rightResult = getBVHHit(scene, currentNode->right, ray, minDist, maxDist, record);
+
+        return leftResult || rightResult;
+    }
+
+    if (currentNode->type == TRIANGLE) {
+        return getTriangleHit (scene->triangles[currentNode->index], ray, minDist, maxDist, record);
+    } else if (currentNode->type == SPHERE) {
+        return getSphereHit (scene->spheres[currentNode->index], ray, minDist, maxDist, record);
+    }
+
+    return false;
+
+}
+
+bool getSceneHitBVH (Scene * scene, Ray ray, HitRecord * record) {
+    double maxDistance = 1e20;
+    
+    return getBVHHit(scene, scene->root, ray, RAY_EPSILON, maxDistance, record);
 }
 
 bool getSceneHit (Scene * scene, Ray ray, HitRecord * record) {

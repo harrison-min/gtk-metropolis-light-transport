@@ -2,6 +2,7 @@
 #define SCENE_LOADER_H
 
 #include "geometry.h"
+#include "bvh.h"
 #include <stdbool.h>
 
 bool loadScene (Scene * scene, const char * objPath, const char * mtlPath);

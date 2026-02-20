@@ -28,7 +28,7 @@ PixelMap * generateTestPixelMap (int width, int height) {
         return NULL;
     }
 
-    fprintf (stderr, "Loaded: %d triangles, %d spheres, %d materials\n",
+    fprintf (stderr, "Loaded: %d triangles, %d spheres, %d materials\n\n",
              scene->numTriangles, scene->numSpheres, scene->numMaterials);
 
     frameScene(scene, cam);
@@ -37,6 +37,8 @@ PixelMap * generateTestPixelMap (int width, int height) {
     Seed * seed = generateSeed();
 
     for (int x = 0; x < width; ++ x) {
+        fprintf(stderr, "\033[1A\033[2K%.3f percent of the way there\n", ((double)x)/width * 100);
+
         for (int y = 0; y < height; ++ y) {
             HitRecord path [MAX_BOUNCES];
 
